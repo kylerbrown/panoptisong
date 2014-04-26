@@ -3,8 +3,10 @@
 toolset for monitoring birdsong
 """
 
+from subprocess import Popen
 from time import sleep
 from datetime import datetime, timedelta
+import json
 
 
 def sleep_daily_till(hour):
@@ -21,5 +23,20 @@ def sleep_daily_till(hour):
     print(datetime.today())
 
 
+def load_config_file(json_file):
+    """loads a config file in json format"""
+    with open(json_file, 'r') as f:
+        conf = json.load(f)
+    return (conf["birds"], conf["boxes"],
+            conf["global-attributes"])
+
+
+def start_jdetect(boxes):
+    for box in boxes:
+        detect_params = box["jdetect"]
+        Popen(['jdetect',
+               '-C', detect_params])
+
+
 if __name__ == "__main__":
-    pass
+    birds, boxes, attrs = load_config_file("example.json")
