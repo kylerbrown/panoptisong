@@ -5,18 +5,18 @@
 	"species": "zf",
 	"lights-on" : "18",
 	"lights-off" : "10"
-    }
+    },
     
     "birds" : {
 	"b12" : "box3",
-	"o172" : "box5",
-    }
+	"o172" : "box5"
+    },
 
     "boxes" : {
 	"box3" : {
 	    "jdetect" : "d3.ini",
 	    "jrecord" : "r3.ini"
-	}
+	},
 	"box5" : {
 	    "jdetect" : "d5.ini",
 	    "jrecord" : "r5.ini"
