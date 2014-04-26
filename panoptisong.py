@@ -19,3 +19,7 @@ def sleep_daily_till(hour):
         future += timedelta(days=1)
     sleep((future-t).seconds)
     print(datetime.today())
+
+
+if __name__ == "__main__":
+    pass
