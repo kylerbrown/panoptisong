@@ -1,17 +1,13 @@
 #!/bin/bash
 
 ######## global variables ########
-bird_file="~/panoptisong/birds"
-recordings="~/panoptisong"
-mkdir -p "$recordings"
-date="$(date +%y%m%d)"
+bird_file="/home/kjbrown/panoptisong/birds"
+recordings="/home/kjbrown/recordings"
 experimenter="kjbrown"
-room="010a"
+room="009"
 species="zf"
 lightson="18"
 lightsoff="10"
-
-global_attributes="-a experimenter=$experimenter -a room=$room -a species=$species -a lightson=$lightson -a lightsoff=$lightsoff -a datatype=1"
 
 # jdetect params
 closeperiod="3000"
@@ -28,7 +24,6 @@ sleep 3
 jackd -R -d alsa -d hw:0 -r 22050 -p 2048 &
 sleep 5
 
-
 function record_bird {
     # starts a jdetect and jrecord session
     bird_attributes="-a bird=$bird -a box=$box -a mic_channel=$mic_channel"
@@ -42,6 +37,11 @@ function record_bird {
     cd ..
 }
 
+global_attributes="-a experimenter=$experimenter -a room=$room -a species=$species -a lightson=$lightson -a lightsoff=$lightsoff -a datatype=1"
+
+mkdir -p "$recordings"
+cd "$recordings"
+date="$(date +%y%m%d)"
 
 # read file, send to record_bird function
 while read line || [[ -n $line ]]; do
