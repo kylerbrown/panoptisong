@@ -7,7 +7,7 @@ scripts for monitoring songbird song via the jack/jill framework
 Usage
 --------
 
-Clone this repository
+Clone this repository: `git clone https://github.com/kylerbrown/panoptisong.git`
 
 Edit the file `birds` to include your birds and their microphone channels.
 
