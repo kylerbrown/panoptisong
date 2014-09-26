@@ -15,6 +15,6 @@ Edit `panoptisong.sh` to change variables such as the name of the experimenter, 
 
 Try running `bash panoptisong.sh` to ensure it's working.
 
-Finally edit cron to start a recording everday by typing `crontab -e`.
-
-To reset at noon every day add the line `0 12 * * * ~/panoptisong/panoptisong.sh`
+Finally either
++ use `dailyreset.sh`
++ or edit cron to start a recording everday by typing `crontab -e`. To reset at noon every day add the line `0 12 * * * ~/panoptisong/panoptisong.sh`
