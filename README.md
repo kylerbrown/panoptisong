@@ -4,10 +4,12 @@ panoptisong
 scripts for monitoring songbird song via the jack/jill framework
 
 
-Usage
+Installation
 --------
 
 Clone this repository: `git clone https://github.com/kylerbrown/panoptisong.git`
+
+Ensure you have a working copy of JACK and [Jill](https://github.com/melizalab/jill).
 
 birds
 ------
