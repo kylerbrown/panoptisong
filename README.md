@@ -1,7 +1,7 @@
 panoptisong
 ===========
 
-scripts for monitoring songbird song via the jack/jill framework
+scripts for monitoring birdsong via the jack/jill framework
 
 
 Installation
