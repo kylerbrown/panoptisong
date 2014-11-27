@@ -15,11 +15,13 @@ Edit the file `birds` to include your birds and their microphone channels.
 
 
     bk196 1 system:capture_3
+
 means a bird name bk196 in box 1 has a microphone channel system:capture_3.
 + You may specify additional channels after the first channel, which will also be recorded at the same time. The first channel is the triggered channel. For exammple, the line
 
 
     o43 4 system:capture_5 system:capture_6
+
 will record both `system:capture_5` and  `system:capture_6` when a signal from `system:capture_5` passes the jdetect threshold.
 
 
