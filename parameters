@@ -1,13 +1,13 @@
+#!/bin/bash
 ######## global variables ########
-date="$(date +%y%m%d)"
 bird_file="/home/kjbrown/panoptisong/birds"
 recordings="/home/kjbrown/recordings"
 
 experimenter="kjbrown"
 room="009"
 species="zf"
-lightson="18"
-lightsoff="10"
+lightson="09"
+lightsoff="17"
 
 # jack params
 servername="acoustic"
@@ -19,4 +19,4 @@ closethresh="0.02"
 closerate="5"
 
 # when to create a new file (24h time)
-reset_time="12:00"
+reset_time="00:01"
