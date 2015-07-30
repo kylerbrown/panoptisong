@@ -26,13 +26,11 @@ will record both `system:capture_5` and  `system:capture_6` when a signal from `
 
 Other Parameters
 ----------------
-Edit `panoptisong.sh` to change variables such as the name of the experimenter, the species, etc.
+Edit the `parameters` file to change variables such as the name of the experimenter, the species, etc.
 
 
 Running
 ----------
-Try running `bash panoptisong.sh` to ensure it's working.
+Try running `bash panoptisong` to ensure it's working.
 
-Finally either
-+ use `dailyreset.sh`, you can open the file and edit the time of day to reset.
-+ or edit cron to start a recording everday by typing `crontab -e`. To reset at noon every day add the line `0 12 * * * ~/panoptisong/panoptisong.sh`
+Panoptisong will create a new file for each bird every day. This keeps file sizes managable and provides an easy way to summarize the quantity of song by looking at the size of the files. To change the time at which new files are made, modify the `reset_time` variable in `parameters`. For normal light cycle use "00:00", for reversed use the middle of the subjective night.
