@@ -1,20 +1,20 @@
 #!/bin/bash
 
 # move to source directory
-cd "$(dirname "$0")"
+cd "$(dirname "$0")" || exit
 ## load parameters
 source ./parameters
 
-global_attributes="-a experimenter=$experimenter -a room=$room -a species=$species -a lightson=$lightson -a lightsoff=$lightsoff -a jackserver=$servername"
+global_attributes="-a experimenter=$ experimenter -a room=$room -a species=$species -a lightson=$lightson -a lightsoff=$lightsoff -a jackserver=$servername"
 jdetect_params="--close-period $closeperiod --close-rate $closerate --close-thresh $closethresh"
 
 ######## move to recordings folder ########
 mkdir -p "$recordings"
-cd "$recordings"
+cd "$recordings" || exit
 
 ######## start jackd ########
 function start_jack {
-    jackd $jackdparams &
+    jackd "$jackdparams" &
     jackdpid=$!
     sleep 5
 }
@@ -25,11 +25,11 @@ function record_bird {
     # starts a jdetect and jrecord session
     # arguments: bird box trig_channel [other channels to record]
     local bird="$1"
-    local box="$2"
-    local trig_channel="$3"
-    local NPosArgs=2
-    local Nothers=$(( $# - NPosArgs))
-    local inChannels="${@:$(( NPosArgs + 1 )):Nothers}"
+    shift
+    local box="$1"
+    shift
+    local trig_channel="$1"
+    local inChannels="$@"
     local channelstring=""
     for channel in $inChannels
     do
@@ -39,25 +39,25 @@ function record_bird {
     filename="${bird}_$date"
     mkdir -p "$bird"
     echo "$bird"
-    cd "$bird"
+    cd "$bird" || exit
     jdetect_string="jdetect -s $servername  ${jdetect_params} --name detect_$bird --in $trig_channel"
     echo "${jdetect_string}"
     ${jdetect_string} &#2>&1 | tee ${filename}_jdetect.log &
     jdetectpids="$! $jdetectpids" # saves pid of program to kill it later
     sleep 1
-    jrecord_string="jrecord -s $servernam --name record_${bird} $channelstring --trig detect_${bird}:trig_out $global_attributes $bird_attributes ${filename}.arf"
+    jrecord_string="jrecord -s $servername --name record_${bird} $channelstring --trig detect_${bird}:trig_out $global_attributes $bird_attributes ${filename}.arf"
     echo "${jrecord_string}"
     ${jrecord_string} &#2>&1 | tee ${filename}_jrecord.log &
     jrecordpids="$! $jrecordpids" # saves pid of program to kill it later
-    cd ..
+    cd .. || exit
 }
 
 # read file, send to record_bird function
 function panoptisong (){
     date="$(date +%y%m%d)"
-    while read line || [[ -n $line ]]; do
+    while read -r line || [[ -n $line ]]; do
 	if ! [[ "$line" =~ ^(#|$) ]]; then
-	    record_bird $line
+	    record_bird "$line"
 	fi
     done <"$bird_file"
 }
@@ -65,10 +65,9 @@ function panoptisong (){
 function sleep_day (){
     startTime=$(date +%s)
     endTime=$(date -d "${reset_time} tomorrow" +%s)
-    timeToWait=$(($endTime- $startTime))
+    timeToWait=$((endTime - startTime))
     sleep $timeToWait
 }
-
 
 while :
 do
@@ -76,9 +75,9 @@ do
     panoptisong
     echo "######## setup complete ########"
     sleep_day
-    kill $jdetectpids
-    kill $jrecordpids
+    kill "$jdetectpids"
+    kill "$jrecordpids"
     sleep 5
-    kill $jackdpid
+    kill "$jackdpid"
     sleep 5
 done
