@@ -1,0 +1,22 @@
+######## global variables ########
+date="$(date +%y%m%d)"
+bird_file="/home/kjbrown/panoptisong/birds"
+recordings="/home/kjbrown/recordings"
+
+experimenter="kjbrown"
+room="009"
+species="zf"
+lightson="18"
+lightsoff="10"
+
+# jack params
+servername="acoustic"
+jackdparams="--name $servername -R -d alsa -d hw:0 -r 22050 -p 2048"
+
+# jdetect params
+closeperiod="3000"
+closethresh="0.02"
+closerate="5"
+
+# when to create a new file (24h time)
+reset_time="12:00"
