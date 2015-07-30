@@ -5,7 +5,7 @@ cd "$(dirname "$0")" || exit
 ## load parameters
 source ./parameters
 
-global_attributes="-a experimenter=$ experimenter -a room=$room -a species=$species -a lightson=$lightson -a lightsoff=$lightsoff -a jackserver=$servername"
+global_attributes="-a experimenter=$experimenter -a room=$room -a species=$species -a lightson=$lightson -a lightsoff=$lightsoff -a jackserver=$servername"
 jdetect_params="--close-period $closeperiod --close-rate $closerate --close-thresh $closethresh"
 
 ######## move to recordings folder ########
@@ -14,7 +14,7 @@ cd "$recordings" || exit
 
 ######## start jackd ########
 function start_jack {
-    jackd "$jackdparams" &
+    jackd $jackdparams & # do not quote variable!
     jackdpid=$!
     sleep 5
 }
@@ -57,9 +57,9 @@ function panoptisong (){
     date="$(date +%y%m%d)"
     while read -r line || [[ -n $line ]]; do
 	if ! [[ "$line" =~ ^(#|$) ]]; then
-	    record_bird "$line"
+	    record_bird $line # do not quote variable!
 	fi
-    done <"$bird_file"
+    done < "$bird_file"
 }
 
 function sleep_day (){
@@ -73,6 +73,7 @@ while :
 do
     start_jack
     panoptisong
+    sleep 2
     echo "######## setup complete ########"
     sleep_day
     kill "$jdetectpids"

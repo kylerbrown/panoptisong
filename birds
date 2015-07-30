@@ -1,5 +1,5 @@
 # NAME	BOX	CHANNEL
-b6	1	system:capture_1
-o181	2	system:capture_2
-k405	5	system:capture_5
-k406	7	system:capture_7
+o100	1	system:capture_1
+p131	2	system:capture_2
+o123	3	system:capture_3
+p133	4	system:capture_4

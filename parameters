@@ -1,17 +1,17 @@
 #!/bin/bash
 ######## global variables ########
-bird_file="/home/kjbrown/panoptisong/birds"
-recordings="/home/kjbrown/recordings"
+bird_file="/home/kjbrown/panoptisong_acoustic/birds"
+recordings="/home/kjbrown/acoustic_recordings"
 
 experimenter="kjbrown"
-room="009"
+room="010b"
 species="zf"
 lightson="09"
 lightsoff="17"
 
 # jack params
 servername="acoustic"
-jackdparams="--name $servername -R -d alsa -d hw:0 -r 22050 -p 2048"
+jackdparams="-n $servername -d alsa -d hw:1 -r 32000 -p 2048"
 
 # jdetect params
 closeperiod="3000"
@@ -19,4 +19,4 @@ closethresh="0.02"
 closerate="5"
 
 # when to create a new file (24h time)
-reset_time="00:01"
+reset_time="00:00"
