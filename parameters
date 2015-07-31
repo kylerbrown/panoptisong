@@ -14,9 +14,11 @@ servername="acoustic"
 jackdparams="-n $servername -d alsa -d hw:1 -r 32000 -p 2048"
 
 # jdetect params
+openthresh="0.02"
+openrate="30"
 closeperiod="3000"
 closethresh="0.02"
 closerate="5"
 
-# when to create a new file (24h time)
+# when to create a new file (24h time eg "00:00") or "never"
 reset_time="00:00"

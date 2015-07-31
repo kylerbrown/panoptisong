@@ -6,7 +6,7 @@ cd "$(dirname "$0")" || exit
 source ./parameters
 
 global_attributes="-a experimenter=$experimenter -a room=$room -a species=$species -a lightson=$lightson -a lightsoff=$lightsoff -a jackserver=$servername"
-jdetect_params="--close-period $closeperiod --close-rate $closerate --close-thresh $closethresh"
+jdetect_params="--close-period $closeperiod --close-rate $closerate --close-thresh $closethresh --open-thresh $openthresh --open-rate $openrate"
 
 ######## move to recordings folder ########
 mkdir -p "$recordings"
@@ -62,7 +62,16 @@ function panoptisong (){
     done < "$bird_file"
 }
 
+
 function sleep_day (){
+    if [ ${reset_time} == "never" ]
+    then
+	echo "Will not do daily reset"
+	while :
+	do
+	    sleep 10
+	done
+    fi
     startTime=$(date +%s)
     endTime=$(date -d "${reset_time} tomorrow" +%s)
     timeToWait=$((endTime - startTime))
@@ -76,9 +85,9 @@ do
     sleep 2
     echo "######## setup complete ########"
     sleep_day
-    kill "$jdetectpids"
-    kill "$jrecordpids"
+    kill $jdetectpids # do not quote!
+    kill $jrecordpids # do not quote!
     sleep 5
-    kill "$jackdpid"
+    kill $jackdpid # do not quote!
     sleep 5
 done
