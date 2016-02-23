@@ -1,0 +1,8 @@
+#!/bin/bash
+
+source parameters
+cd $recordings
+du . -h | sort -hr | tail -n +2
+df -h | head -1
+df -h | grep home
+cd -

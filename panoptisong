@@ -17,6 +17,7 @@ function start_jack {
     jackd $jackdparams & # do not quote variable!
     jackdpid=$!
     sleep 5
+    jack_lsp -s $servername
 }
 
 jdetectpids=""
@@ -52,6 +53,12 @@ function record_bird {
     cd .. || exit
 }
 
+function backup(){
+    if [-n "${backup_location}"]; then
+	rsync -auv "$recordings ${backup_location}" &
+    fi
+}
+
 # read file, send to record_bird function
 function panoptisong (){
     date="$(date +%y%m%d)"
@@ -85,6 +92,7 @@ do
     sleep 2
     echo "######## setup complete ########"
     sleep_day
+    backup
     kill $jdetectpids # do not quote!
     kill $jrecordpids # do not quote!
     sleep 5
