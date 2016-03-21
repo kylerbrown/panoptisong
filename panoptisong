@@ -54,8 +54,8 @@ function record_bird {
 }
 
 function backup(){
-    if [-n "${backup_location}"]; then
-	rsync -auv "$recordings ${backup_location}" &
+    if [ -n "${backup_location}" ]; then
+	rsync -auv "$recordings" "${backup_location}" &
     fi
 }
 
