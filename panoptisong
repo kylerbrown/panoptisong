@@ -96,6 +96,6 @@ do
     kill $jdetectpids # do not quote!
     kill $jrecordpids # do not quote!
     sleep 5
-    kill $jackdpid # do not quote!
+    #kill $jackdpid # do not quote!
     sleep 5
 done
