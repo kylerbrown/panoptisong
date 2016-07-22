@@ -1,0 +1,101 @@
+#!/bin/bash
+
+# move to source directory
+cd "$(dirname "$0")" || exit
+## load parameters
+source ./parameters
+
+global_attributes="-a experimenter=$experimenter -a room=$room -a species=$species -a lightson=$lightson -a lightsoff=$lightsoff -a jackserver=$servername"
+jdetect_params="--close-period $closeperiod --close-rate $closerate --close-thresh $closethresh --open-thresh $openthresh --open-rate $openrate"
+
+######## move to recordings folder ########
+mkdir -p "$recordings"
+cd "$recordings" || exit
+
+######## start jackd ########
+function start_jack {
+    jackd $jackdparams & # do not quote variable!
+    jackdpid=$!
+    sleep 5
+    jack_lsp -s $servername
+}
+
+jdetectpids=""
+jrecordpids=""
+function record_bird {
+    # starts a jdetect and jrecord session
+    # arguments: bird box trig_channel [other channels to record]
+    local bird="$1"
+    shift
+    local box="$1"
+    shift
+    local trig_channel="$1"
+    local inChannels="$@"
+    local channelstring=""
+    for channel in $inChannels
+    do
+	channelstring="$channelstring --in $channel"
+    done
+    bird_attributes="-a bird=$bird -a box=$box -a trig_channel=$trig_channel"
+    filename="${bird}_$date"
+    mkdir -p "$bird"
+    echo "$bird"
+    cd "$bird" || exit
+    jdetect_string="jdetect -s $servername  ${jdetect_params} --name detect_$bird --in $trig_channel"
+    echo "${jdetect_string}"
+    ${jdetect_string} &#2>&1 | tee ${filename}_jdetect.log &
+    jdetectpids="$! $jdetectpids" # saves pid of program to kill it later
+    sleep 1
+    jrecord_string="jrecord -s $servername --name record_${bird} $channelstring --trig detect_${bird}:trig_out $global_attributes $bird_attributes ${filename}.arf"
+    echo "${jrecord_string}"
+    ${jrecord_string} &#2>&1 | tee ${filename}_jrecord.log &
+    jrecordpids="$! $jrecordpids" # saves pid of program to kill it later
+    cd .. || exit
+}
+
+function backup(){
+    if [ -n "${backup_location}" ]; then
+	rsync -auv "$recordings" "${backup_location}" &
+    fi
+}
+
+# read file, send to record_bird function
+function panoptisong (){
+    date="$(date +%y%m%d)"
+    while read -r line || [[ -n $line ]]; do
+	if ! [[ "$line" =~ ^(#|$) ]]; then
+	    record_bird $line # do not quote variable!
+	fi
+    done < "$bird_file"
+}
+
+
+function sleep_day (){
+    if [ ${reset_time} == "never" ]
+    then
+	echo "Will not do daily reset"
+	while :
+	do
+	    sleep 10
+	done
+    fi
+    startTime=$(date +%s)
+    endTime=$(date -d "${reset_time} tomorrow" +%s)
+    timeToWait=$((endTime - startTime))
+    sleep $timeToWait
+}
+
+while :
+do
+    start_jack
+    panoptisong
+    sleep 2
+    echo "######## setup complete ########"
+    sleep_day
+    backup
+    kill $jdetectpids # do not quote!
+    kill $jrecordpids # do not quote!
+    sleep 5
+    #kill $jackdpid # do not quote!
+    sleep 5
+done
