@@ -4,6 +4,8 @@ from os import listdir
 from os.path import isfile, join
 import re
 
+from collections import OrderedDict
+
 class Info():
     def __init__(self, params, birds):
         # self.dd = attrs_dict
@@ -70,7 +72,7 @@ class Info():
             params_lines = params_file.readlines()
             birds_lines = birds_file.readlines()
 
-        params = {}
+        params = OrderedDict()
         params_re = re.compile('([a-zA-Z0-9\_]*?)=\"(.*?)\"')
         for line in params_lines:
             matched = params_re.match(line)
@@ -117,7 +119,7 @@ class BirdsList(urwid.WidgetWrap):
     def keypress(self, size, key):
         if key == "ctrl n":
             self.add_bird("name", "box", "channel")
-        elif key == "ctrl k":
+        elif key == "ctrl l":
             self.remove_focused_bird()
 
         else:
@@ -166,11 +168,11 @@ class ParamsList(urwid.WidgetWrap):
         return res
         
     def keypress(self, size, key):
-        if key == "ctrl a":
-            print(self.read_values())
+        # if key == "ctrl a":
+        #     print(self.read_values())
 
-        else:
-            return super(ParamsList, self).keypress(size, key)
+        # else:
+        return super(ParamsList, self).keypress(size, key)
 
 
 class ColumnEditor(urwid.WidgetWrap):
@@ -248,7 +250,9 @@ class Loader(urwid.WidgetWrap):
 
 class GUI(urwid.WidgetWrap):
     def __init__(self):
-        self.infobox = urwid.Text('hello scientist\nI like pie')
+        self.infobox = urwid.Text('''Hello scientist!
+ctrl+w to save   ctrl+e to load   ctrl+k to cancel   ctrl+c to quit
+ctrl+n to add new bird   ctrl+l to delete selected bird''')
         self.info = Info.read_from_file()
         self.editor = ColumnEditor(self.info)
 
