@@ -13,6 +13,30 @@ class Info():
         self.birds = [["k1", "1", "system:capture_1"],["k2", "2", "system:capture2"],
                             ["k3", "3", "system:capture:3"]]
 
+
+    def to_string(info):
+        params, birds = info
+        parts = []
+        parts.append('#!/bin/bash')
+        parts.append('######## global variables ########')
+        for (key, value) in params.items():
+            parts.append('{0}="{1}"'.format(key, value))
+
+        params_string = "\n".join(parts)
+        parts = []
+        parts.append('# NAME\tBOX\tCHANNEL')
+        for (nm,bx,ch) in birds:
+            parts.append("{0}\t{1}\t{2}".format(nm,bx,ch))
+        birds_string = '\n'.join(parts)
+        return (params_string, birds_string)
+
+    def write_to_file(filename, info):
+        params_str, birds_str = Info.to_string(info)
+        with open(filename+'_parameters', 'w+') as params_file, open(filename+'_birds', 'w+') as birds_file:
+            params_file.write(params_str)
+            birds_file.write(birds_str)
+
+
     
 
 
@@ -37,7 +61,7 @@ class BirdsList(urwid.WidgetWrap):
 
     def remove_focused_bird(self):
         idx = self.widget.focus_position
-        # Don't delete the header
+        # Don't touch the header - delete only if focused on one of the bird entries
         if isinstance(self.widget.body[idx], urwid.container.Columns):
             del self.widget.body[idx]
 
@@ -91,7 +115,7 @@ class ParamsList(urwid.WidgetWrap):
                 val = item.contents[1][0].edit_text
                 res[key] = val
             except:
-                print(sys.exc_info()[1])
+                pass
         return res
         
     def keypress(self, size, key):
@@ -121,12 +145,35 @@ class ColumnEditor(urwid.WidgetWrap):
         else:
             return super(ColumnEditor, self).keypress(size, key)
 
-
-
     def read_info(self):
         params = self.params_col.read_values()
         birds = self.birds_col.read_values()
         return (params, birds)
+
+class Saver(urwid.WidgetWrap):
+    signals = ['saved']
+    def __init__(self):
+        caption = "Enter the prefix for both filenames (ctrl+k to cancel):\n\n"
+        suggested = "my_config"
+        self.edit = urwid.Edit(caption=caption, edit_text=suggested, align="center")
+        self.widget = urwid.Filler(self.edit)
+        urwid.WidgetWrap.__init__(self, self.widget)
+
+    def set_info(self, info):
+        self.info = info
+
+    def keypress(self, size, key):
+        if key == "enter":
+            self.save()
+        elif key == "ctrl k":
+            urwid.emit_signal(self, 'saved')
+        else:
+            return super(Saver, self).keypress(size, key)
+
+    def save(self):
+        filename = self.edit.edit_text
+        Info.write_to_file(filename, self.info)
+        urwid.emit_signal(self, 'saved')
 
 
 class GUI(urwid.WidgetWrap):
@@ -135,15 +182,38 @@ class GUI(urwid.WidgetWrap):
         self.info = Info()
         self.editor = ColumnEditor(self.info)
 
+        self.saver = Saver()
+        urwid.connect_signal(self.saver, 'saved', self.show_editor)
+
+
         self.widget = urwid.Frame(self.editor, footer=self.infobox)
         urwid.WidgetWrap.__init__(self, self.widget)
 
+    def show_editor(self, *args):
+        self.widget.body = self.editor
+
+
 
     def keypress(self, size, key):
-        if key == "ctrl e":
-            self.widget.footer = urwid.Edit(caption="Saving", edit_text="filename")
+        if key == "ctrl w":
+            self.process_save()
+        elif key == "ctrl f":
+            self.widget.body = self.editor
         else:
             return super(GUI, self).keypress(size, key)
+
+    def read_info(self):
+        return self.editor.read_info()
+
+    def process_save(self):
+        self.widget.body = self.saver
+        self.saver.set_info(self.read_info())
+        # self.saver.save(self.read_info())
+        # Then saver emits the 'finished' signal
+
+
+    def process_load(self):
+        pass
 
 
 # p = Info()
