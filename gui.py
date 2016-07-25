@@ -1,17 +1,22 @@
 import urwid
 import sys
+from os import listdir
+from os.path import isfile, join
+import re
 
 class Info():
-    def __init__(self):
+    def __init__(self, params, birds):
         # self.dd = attrs_dict
         # if colnames == None:
         #     self.colnames = self.dd.keys()
         # else:
         #     self.colnames = colnames
-        self.params = {"jackname": "lol", "room":"001"}
-        # self.params = {str(i):str(i) for i in range(1000)}
-        self.birds = [["k1", "1", "system:capture_1"],["k2", "2", "system:capture2"],
-                            ["k3", "3", "system:capture:3"]]
+        # self.params = {"jackname": "lol", "room":"001"}
+        # # self.params = {str(i):str(i) for i in range(1000)}
+        # self.birds = [["k1", "1", "system:capture_1"],["k2", "2", "system:capture2"],
+        #                     ["k3", "3", "system:capture:3"]]
+        self.params = params
+        self.birds = birds
 
 
     def to_string(info):
@@ -30,13 +35,59 @@ class Info():
         birds_string = '\n'.join(parts)
         return (params_string, birds_string)
 
-    def write_to_file(filename, info):
-        params_str, birds_str = Info.to_string(info)
-        with open(filename+'_parameters', 'w+') as params_file, open(filename+'_birds', 'w+') as birds_file:
+    def write_to_file(info, prefix='<default>'):
+        if prefix == '<default>':
+            prefix = sys.path[0]+'/' #opening the default file
+        else:
+            prefix = sys.path[0]+'/'+prefix+'_' #adding script directory
+        with open(prefix+'parameters', 'w+') as params_file,\
+                open(prefix+'birds', 'w+') as birds_file:
             params_file.write(params_str)
             birds_file.write(birds_str)
 
+    def list_prefixes():
+        mypath = sys.path[0]
+        filenames = [f for f in listdir(mypath) if isfile(join(mypath, f))]
+        # Gets only files in the script directory
+        pattern = re.compile('(.*)_parameters')
+        possible_prefixes = []
+        for name in filenames:
+            matched = pattern.match(name)
+            if matched != None:
+                possible_prefixes.append(matched.group(1))
+        prefixes = [pfx for pfx in possible_prefixes 
+            if pfx+"_parameters" in filenames and pfx+"_birds" in filenames]
+        return prefixes
 
+
+    def read_from_file(prefix='<default>'):
+        if prefix == '<default>':
+            prefix = sys.path[0]+'/' #opening the default file
+        else:
+            prefix = sys.path[0]+'/'+prefix+'_' #adding script directory
+        with open(prefix+'parameters', 'r+') as params_file,\
+                open(prefix+'birds', 'r+') as birds_file:
+            params_lines = params_file.readlines()
+            birds_lines = birds_file.readlines()
+
+        params = {}
+        params_re = re.compile('([a-zA-Z0-9\_]*?)=\"(.*?)\"')
+        for line in params_lines:
+            matched = params_re.match(line)
+            if matched == None:
+                continue
+            key = matched.group(1)
+            val = matched.group(2)
+            params[key] = val
+
+        birds = []
+        birds_re = re.compile('([^#]*)\t(.*)\t(.*)')
+        for line in birds_lines:
+            matched = birds_re.match(line)
+            if matched == None:
+                continue
+            birds.append(matched.group(1,2,3))
+        return Info(params, birds)
     
 
 
@@ -44,12 +95,9 @@ class BirdsList(urwid.WidgetWrap):
     def __init__(self, name, birds_list):
         self.birds = birds_list
         body = [urwid.Text(name), urwid.Divider()]
-        self.header_len = len(body)
         self.widget = urwid.ListBox(urwid.SimpleFocusListWalker(body))
         for (name, box, channel) in self.birds:
-            field = self.add_bird(name, box, channel)
-            # body.append(urwid.AttrMap(field, None, focus_map='reversed'))
-        
+            field = self.add_bird(name, box, channel)        
         urwid.WidgetWrap.__init__(self, self.widget)
 
     def add_bird(self, name, box, channel):
@@ -61,7 +109,8 @@ class BirdsList(urwid.WidgetWrap):
 
     def remove_focused_bird(self):
         idx = self.widget.focus_position
-        # Don't touch the header - delete only if focused on one of the bird entries
+        # Don't touch the header
+        # - delete only if focused on one of the bird entries
         if isinstance(self.widget.body[idx], urwid.container.Columns):
             del self.widget.body[idx]
 
@@ -70,8 +119,6 @@ class BirdsList(urwid.WidgetWrap):
             self.add_bird("name", "box", "channel")
         elif key == "ctrl k":
             self.remove_focused_bird()
-        elif key == "ctrl a":
-            print(self.read_values())
 
         else:
             return super(BirdsList, self).keypress(size, key)
@@ -153,7 +200,7 @@ class ColumnEditor(urwid.WidgetWrap):
 class Saver(urwid.WidgetWrap):
     signals = ['saved']
     def __init__(self):
-        caption = "Enter the prefix for both filenames (ctrl+k to cancel):\n\n"
+        caption = "SAVING\nEnter the prefix for both filenames (ctrl+k to cancel):\n\n"
         suggested = "my_config"
         self.edit = urwid.Edit(caption=caption, edit_text=suggested, align="center")
         self.widget = urwid.Filler(self.edit)
@@ -176,14 +223,39 @@ class Saver(urwid.WidgetWrap):
         urwid.emit_signal(self, 'saved')
 
 
+class Loader(urwid.WidgetWrap):
+    signals = ['loaded']
+    def __init__(self):
+        body = [urwid.Text('LOADING'), urwid.Divider()]
+        self.widget = urwid.ListBox(urwid.SimpleFocusListWalker(body))
+        urwid.WidgetWrap.__init__(self, self.widget)
+
+        prefixes = ['<default>'] + Info.list_prefixes()
+        for p in prefixes:
+            txt = urwid.SelectableIcon(text=p)
+            self.widget.body.append(txt)
+
+    def keypress(self, size, key):
+        if key == 'enter':
+            self.load()
+        else:
+            return super(Loader, self).keypress(size, key)
+
+    def load(self):
+        prefix = self.widget.focus.text
+        self.loaded = Info.read_from_file(prefix)
+        urwid.emit_signal(self, 'loaded')
+
 class GUI(urwid.WidgetWrap):
     def __init__(self):
-        self.infobox = urwid.Text("hello scientist\nI like pie")
-        self.info = Info()
+        self.infobox = urwid.Text('hello scientist\nI like pie')
+        self.info = Info.read_from_file()
         self.editor = ColumnEditor(self.info)
 
         self.saver = Saver()
+        self.loader = Loader()
         urwid.connect_signal(self.saver, 'saved', self.show_editor)
+        urwid.connect_signal(self.loader, 'loaded', self.load_data)
 
 
         self.widget = urwid.Frame(self.editor, footer=self.infobox)
@@ -192,13 +264,39 @@ class GUI(urwid.WidgetWrap):
     def show_editor(self, *args):
         self.widget.body = self.editor
 
+    def show_saver(self, *args):
+        saver_bg = urwid.AttrWrap(self.saver, 'savbg')
+        fill = urwid.Filler(saver_bg, valign='middle', height=30)
+        overlay = urwid.Overlay(fill, self.editor,
+            align = 'center', valign='middle',
+            height=('relative',50), width=('relative', 50),
+            top = 1, bottom=1)
+        self.widget.body = overlay
+
+    def show_loader(self, *args):
+        loader_bg = urwid.AttrWrap(self.loader, 'loadbg')
+        fill = urwid.Filler(loader_bg, valign='middle', height=30)
+        overlay = urwid.Overlay(fill, self.editor,
+            align = 'center', valign='middle',
+            height=('relative',50), width=('relative', 50),
+            top = 1, bottom=1)
+        self.widget.body = overlay
+
+    def load_data(self):
+        self.editor = ColumnEditor(self.loader.loaded)
+        self.show_editor()
+
+
+
 
 
     def keypress(self, size, key):
         if key == "ctrl w":
             self.process_save()
-        elif key == "ctrl f":
-            self.widget.body = self.editor
+        elif key == "ctrl e":
+            self.process_load()
+        elif key == "ctrl k":
+            self.show_editor()
         else:
             return super(GUI, self).keypress(size, key)
 
@@ -206,17 +304,20 @@ class GUI(urwid.WidgetWrap):
         return self.editor.read_info()
 
     def process_save(self):
-        self.widget.body = self.saver
+        self.show_saver()
         self.saver.set_info(self.read_info())
-        # self.saver.save(self.read_info())
-        # Then saver emits the 'finished' signal
-
+        # Then saver emits the 'saved' signal
 
     def process_load(self):
-        pass
+        self.show_loader()
+        #Then loader emits the 'loaded' signal
+
+
 
 
 # p = Info()
 # e = ColumnEditor(p, {})
 m = GUI()
-urwid.MainLoop(m).run()
+urwid.MainLoop(m, 
+    [('savbg', 'white', 'dark blue'), ('loadbg', 'white', 'dark green')]
+    ).run()
