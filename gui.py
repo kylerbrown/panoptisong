@@ -1,8 +1,9 @@
 import urwid
 import sys
-from os import listdir
+import os
 from os.path import isfile, join
 import re
+import subprocess
 
 from collections import OrderedDict
 
@@ -49,7 +50,7 @@ class Info():
 
     def list_prefixes():
         mypath = sys.path[0]
-        filenames = [f for f in listdir(mypath) if isfile(join(mypath, f))]
+        filenames = [f for f in os.listdir(mypath) if isfile(join(mypath, f))]
         # Gets only files in the script directory
         pattern = re.compile('(.*)_parameters')
         possible_prefixes = []
@@ -168,10 +169,6 @@ class ParamsList(urwid.WidgetWrap):
         return res
         
     def keypress(self, size, key):
-        # if key == "ctrl a":
-        #     print(self.read_values())
-
-        # else:
         return super(ParamsList, self).keypress(size, key)
 
 
@@ -181,7 +178,8 @@ class ColumnEditor(urwid.WidgetWrap):
         self.params_col = ParamsList("PARAMETERS", self.info.params)
         self.birds_col = BirdsList("BIRDS", self.info.birds)
         self.ncols = 2
-        self.widget = urwid.Pile([self.params_col, self.birds_col])
+        self.widget = urwid.Pile([urwid.LineBox(self.params_col),
+                            urwid.LineBox(self.birds_col)])
         urwid.WidgetWrap.__init__(self, self.widget)
 
     def toggle_column(self):
@@ -225,6 +223,30 @@ class Saver(urwid.WidgetWrap):
         urwid.emit_signal(self, 'saved')
 
 
+class Runner(urwid.WidgetWrap):
+    def __init__(self):
+        caption = '''START RECORDING
+I will start recording with currently selected parameters.
+Press ENTER to start or ctrl+k to cancel.'''
+        text = urwid.Text(caption)
+        button = urwid.Button(caption, self.start_recording)
+        self.widget = urwid.Filler(button)
+        urwid.WidgetWrap.__init__(self, self.widget)
+
+    def keypress(self, size, key):
+        if key == 'enter':
+            self.start_recording()
+        else:
+            return super(Runner, self).keypress(size, key)
+
+    def start_recording(self, *args):
+        subprocess.call('clear')
+        os.execv('./script.sh', ('script', ))
+
+
+        
+
+
 class Loader(urwid.WidgetWrap):
     signals = ['loaded']
     def __init__(self):
@@ -248,6 +270,7 @@ class Loader(urwid.WidgetWrap):
         self.loaded = Info.read_from_file(prefix)
         urwid.emit_signal(self, 'loaded')
 
+
 class GUI(urwid.WidgetWrap):
     def __init__(self):
         self.infobox = urwid.Text('''Hello scientist!
@@ -258,6 +281,7 @@ ctrl+n to add new bird   ctrl+l to delete selected bird''')
 
         self.saver = Saver()
         self.loader = Loader()
+        self.runner = Runner()
         urwid.connect_signal(self.saver, 'saved', self.show_editor)
         urwid.connect_signal(self.loader, 'loaded', self.load_data)
 
@@ -268,30 +292,9 @@ ctrl+n to add new bird   ctrl+l to delete selected bird''')
     def show_editor(self, *args):
         self.widget.body = self.editor
 
-    def show_saver(self, *args):
-        saver_bg = urwid.AttrWrap(self.saver, 'savbg')
-        fill = urwid.Filler(saver_bg, valign='middle', height=30)
-        overlay = urwid.Overlay(fill, self.editor,
-            align = 'center', valign='middle',
-            height=('relative',50), width=('relative', 50),
-            top = 1, bottom=1)
-        self.widget.body = overlay
-
-    def show_loader(self, *args):
-        loader_bg = urwid.AttrWrap(self.loader, 'loadbg')
-        fill = urwid.Filler(loader_bg, valign='middle', height=30)
-        overlay = urwid.Overlay(fill, self.editor,
-            align = 'center', valign='middle',
-            height=('relative',50), width=('relative', 50),
-            top = 1, bottom=1)
-        self.widget.body = overlay
-
     def load_data(self):
         self.editor = ColumnEditor(self.loader.loaded)
         self.show_editor()
-
-
-
 
 
     def keypress(self, size, key):
@@ -301,6 +304,8 @@ ctrl+n to add new bird   ctrl+l to delete selected bird''')
             self.process_load()
         elif key == "ctrl k":
             self.show_editor()
+        elif key == "ctrl p":
+            self.process_record()
         else:
             return super(GUI, self).keypress(size, key)
 
@@ -308,20 +313,30 @@ ctrl+n to add new bird   ctrl+l to delete selected bird''')
         return self.editor.read_info()
 
     def process_save(self):
-        self.show_saver()
+        self.widget.body = self.overlay(self.saver, 'savebg', 100)
         self.saver.set_info(self.read_info())
         # Then saver emits the 'saved' signal
 
     def process_load(self):
-        self.show_loader()
+        self.widget.body = self.overlay(self.loader, 'loadbg', 100)
         #Then loader emits the 'loaded' signal
 
+    def process_record(self):
+        self.widget.body = self.overlay(self.runner, 'runbg', 100)
 
 
+    def overlay(self, widget, palette, height_percent):
+        bg = urwid.AttrWrap(widget, palette)
+        fill = urwid.Filler(bg, valign='middle', height=('relative', height_percent))
+        overlay = urwid.Overlay(fill, self.editor,
+            align = 'center', valign='middle',
+            height=('relative',50), width=('relative', 50),
+            top=1, bottom=1)
+        return overlay
 
-# p = Info()
-# e = ColumnEditor(p, {})
+
 m = GUI()
-urwid.MainLoop(m, 
-    [('savbg', 'white', 'dark blue'), ('loadbg', 'white', 'dark green')]
-    ).run()
+loop = urwid.MainLoop(m, 
+    [('savebg', 'white', 'dark blue'), ('loadbg', 'white', 'dark green'),
+        ('runbg', 'white', 'dark red')
+    ]).run()
