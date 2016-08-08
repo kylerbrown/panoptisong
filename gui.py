@@ -4,8 +4,18 @@ import os
 from os.path import isfile, join
 import re
 import subprocess
+from time import sleep
 
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
+
+
+HINTS = defaultdict(lambda: "", {
+        'recordings': 'Directory in which recording files are saved.',
+        'backup_location': 'Directory to which files can be copied at reset_time (can be remote.)',
+        'servername': 'jack server name - should not matter.',
+        'jackdparams': '''-r is sampling rate, -p is frames per period
+If you get an error running jack, maybe you need to change the hw:x parameter, find a proper soundcard using aplay -l.'''
+    })
 
 class Info():
     def __init__(self, params, birds):
@@ -84,12 +94,12 @@ class Info():
             params[key] = val
 
         birds = []
-        birds_re = re.compile('([^#]*)\t(.*)\t(.*)')
+        birds_re = re.compile('^([^#]*)\t(.*)\t(.*)$')
         for line in birds_lines:
             matched = birds_re.match(line)
             if matched == None:
                 continue
-            birds.append(matched.group(1,2,3))
+            birds.append(matched.groups())
         return Info(params, birds)
     
 
@@ -97,7 +107,8 @@ class Info():
 class BirdsList(urwid.WidgetWrap):
     def __init__(self, name, birds_list):
         self.birds = birds_list
-        body = [urwid.Text(name), urwid.Divider()]
+        header = urwid.Columns([urwid.Text(txt) for txt in ('name', 'box', 'jack_channel')])
+        body = [urwid.Text(name), urwid.Divider(), header]
         self.widget = urwid.ListBox(urwid.SimpleFocusListWalker(body))
         for (name, box, channel) in self.birds:
             field = self.add_bird(name, box, channel)        
@@ -144,19 +155,25 @@ class BirdsList(urwid.WidgetWrap):
 class ParamsList(urwid.WidgetWrap):
     def __init__(self, name, params_list):
         self.params = params_list
-        body = [urwid.Text(name), urwid.Divider()]
+        body = []
         for (key, val) in self.params.items():
             field_key = urwid.Text(key)
             field_val = urwid.Edit(edit_text=val)
             field = urwid.Columns([field_key, field_val])
             body.append(field)
 
-        self.widget = urwid.ListBox(urwid.SimpleFocusListWalker(body))
+        self.hint = urwid.Text('hint: ')
+        self.walker = urwid.SimpleFocusListWalker(body)
+        self.listbox = urwid.ListBox(self.walker)
+        self.widget = urwid.Frame(urwid.ListBox(self.walker),
+            header = urwid.Pile([urwid.Text(name), urwid.Divider()]),
+            footer = urwid.Pile([urwid.Divider(), self.hint]))
         urwid.WidgetWrap.__init__(self, self.widget)
+
 
     def read_values(self):
         res = {}
-        for item in self.widget.body:
+        for item in self.listbox.body:
             # item is either Column, or Text or Divider which will give errors
             try:
                 # First index is over elements of the Column,
@@ -167,9 +184,14 @@ class ParamsList(urwid.WidgetWrap):
             except:
                 pass
         return res
+
+    def update_hint(self):
+        self.hint.set_text('hint: '+ HINTS[self.listbox.focus.contents[0][0].text])
         
     def keypress(self, size, key):
-        return super(ParamsList, self).keypress(size, key)
+        ret = super(ParamsList, self).keypress(size, key)
+        self.update_hint()
+        return ret
 
 
 class ColumnEditor(urwid.WidgetWrap):
@@ -227,6 +249,7 @@ class Runner(urwid.WidgetWrap):
     def __init__(self):
         caption = '''START RECORDING
 I will start recording with currently selected parameters.
+First I will kill all running jack servers.
 Press ENTER to start or ctrl+k to cancel.'''
         text = urwid.Text(caption)
         button = urwid.Button(caption, self.start_recording)
@@ -274,7 +297,7 @@ class Loader(urwid.WidgetWrap):
 class GUI(urwid.WidgetWrap):
     def __init__(self):
         self.infobox = urwid.Text('''Hello scientist!
-ctrl+w to save   ctrl+e to load   ctrl+k to cancel   ctrl+c to quit
+ctrl+w to save   ctrl+e to load   ctrl+k to cancel   ctrl+c to quit   ctrl+p to record
 ctrl+n to add new bird   ctrl+l to delete selected bird''')
         self.info = Info.read_from_file()
         self.editor = ColumnEditor(self.info)
