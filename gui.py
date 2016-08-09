@@ -14,20 +14,14 @@ HINTS = defaultdict(lambda: "", {
         'backup_location': 'Directory to which files can be copied at reset_time (can be remote.)',
         'servername': 'jack server name - should not matter.',
         'jackdparams': '''-r is sampling rate, -p is frames per period
-If you get an error running jack, maybe you need to change the hw:x parameter, find a proper soundcard using aplay -l.'''
+If you get an error running jack, maybe you need to change the hw:x parameter, find the right soundcard using aplay -l.'''
     })
+
+
+BIRD_VALS = ('name', 'box', 'channel')
 
 class Info():
     def __init__(self, params, birds):
-        # self.dd = attrs_dict
-        # if colnames == None:
-        #     self.colnames = self.dd.keys()
-        # else:
-        #     self.colnames = colnames
-        # self.params = {"jackname": "lol", "room":"001"}
-        # # self.params = {str(i):str(i) for i in range(1000)}
-        # self.birds = [["k1", "1", "system:capture_1"],["k2", "2", "system:capture2"],
-        #                     ["k3", "3", "system:capture:3"]]
         self.params = params
         self.birds = birds
 
@@ -41,14 +35,17 @@ class Info():
             parts.append('{0}="{1}"'.format(key, value))
 
         params_string = "\n".join(parts)
+        params_string = params_string + '\n' # Newline at the end for consistency
         parts = []
         parts.append('# NAME\tBOX\tCHANNEL')
         for (nm,bx,ch) in birds:
             parts.append("{0}\t{1}\t{2}".format(nm,bx,ch))
         birds_string = '\n'.join(parts)
+        birds_string = birds_string + '\n' # Newline at the end for consistency
         return (params_string, birds_string)
 
     def write_to_file(info, prefix='<default>'):
+        params_str, birds_str = Info.to_string(info)
         if prefix == '<default>':
             prefix = sys.path[0]+'/' #opening the default file
         else:
@@ -94,7 +91,9 @@ class Info():
             params[key] = val
 
         birds = []
-        birds_re = re.compile('^([^#]*)\t(.*)\t(.*)$')
+        birds_re_string = '^' + '\t'.join(['([^#]*)']*len(BIRD_VALS))+'\n$'
+        birds_re = re.compile(birds_re_string)
+        # birds_re = re.compile('^([^#]*)\t(.*)\t(.*)$')
         for line in birds_lines:
             matched = birds_re.match(line)
             if matched == None:
@@ -107,30 +106,31 @@ class Info():
 class BirdsList(urwid.WidgetWrap):
     def __init__(self, name, birds_list):
         self.birds = birds_list
-        header = urwid.Columns([urwid.Text(txt) for txt in ('name', 'box', 'jack_channel')])
-        body = [urwid.Text(name), urwid.Divider(), header]
-        self.widget = urwid.ListBox(urwid.SimpleFocusListWalker(body))
-        for (name, box, channel) in self.birds:
-            field = self.add_bird(name, box, channel)        
+        self.header = urwid.Pile([urwid.Text(name),
+            urwid.Columns([urwid.Text(txt) for txt in BIRD_VALS]),
+            urwid.Divider()])
+        # header = urwid.Columns([urwid.Text(txt) for txt in BIRD_VALS])
+        body = []
+        self.listbox = urwid.ListBox(urwid.SimpleFocusListWalker(body)) 
+        self.widget = urwid.Frame(self.listbox, header=self.header)
+        for vals in self.birds:
+            field = self.add_bird(vals)        
         urwid.WidgetWrap.__init__(self, self.widget)
 
-    def add_bird(self, name, box, channel):
-        field_name = urwid.Edit(edit_text=name)
-        field_box = urwid.Edit(edit_text=box)
-        field_channel = urwid.Edit(edit_text=channel)
-        field = urwid.Columns([field_name, field_box, field_channel])
-        self.widget.body.append(field)
+    def add_bird(self, vals):
+        field = urwid.Columns([urwid.Edit(edit_text=val) for val in vals])
+        self.listbox.body.append(field)
 
     def remove_focused_bird(self):
-        idx = self.widget.focus_position
+        idx = self.listbox.focus_position
         # Don't touch the header
         # - delete only if focused on one of the bird entries
-        if isinstance(self.widget.body[idx], urwid.container.Columns):
-            del self.widget.body[idx]
+        if isinstance(self.listbox.body[idx], urwid.container.Columns):
+            del self.listbox.body[idx]
 
     def keypress(self, size, key):
         if key == "ctrl n":
-            self.add_bird("name", "box", "channel")
+            self.add_bird(BIRD_VALS)
         elif key == "ctrl l":
             self.remove_focused_bird()
 
@@ -139,7 +139,7 @@ class BirdsList(urwid.WidgetWrap):
 
     def read_values(self):
         res = []
-        for item in self.widget.body:
+        for item in self.listbox.body:
             #item is either Column, or Text or Divider which will give errors
             try:
                 vals = []
@@ -172,7 +172,7 @@ class ParamsList(urwid.WidgetWrap):
 
 
     def read_values(self):
-        res = {}
+        res = OrderedDict()
         for item in self.listbox.body:
             # item is either Column, or Text or Divider which will give errors
             try:
@@ -210,7 +210,6 @@ class ColumnEditor(urwid.WidgetWrap):
     def keypress(self, size, key):
         if key == 'tab':
             self.toggle_column()
-
         else:
             return super(ColumnEditor, self).keypress(size, key)
 
@@ -241,7 +240,7 @@ class Saver(urwid.WidgetWrap):
 
     def save(self):
         filename = self.edit.edit_text
-        Info.write_to_file(filename, self.info)
+        Info.write_to_file(self.info, filename)
         urwid.emit_signal(self, 'saved')
 
 
