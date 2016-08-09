@@ -20,7 +20,7 @@ If you get an error running jack, maybe you need to change the hw:x parameter, f
 
 BIRD_VALS = ('name', 'box', 'experimenter', 'channel')
 
-RECORD_SCRIPT = './script.sh'
+RECORD_SCRIPT = './panoptisong'
 
 record_at_exit = False
 
@@ -42,8 +42,8 @@ class Info():
         params_string = params_string + '\n' # Newline at the end for consistency
         parts = []
         parts.append('# NAME\tBOX\tCHANNEL')
-        for (nm,bx,ch) in birds:
-            parts.append("{0}\t{1}\t{2}".format(nm,bx,ch))
+        for vals in birds:
+            parts.append('\t'.join(vals))
         birds_string = '\n'.join(parts)
         birds_string = birds_string + '\n' # Newline at the end for consistency
         return (params_string, birds_string)
@@ -242,8 +242,9 @@ class Saver(urwid.WidgetWrap):
         else:
             return super(Saver, self).keypress(size, key)
 
-    def save(self):
-        filename = self.edit.edit_text
+    def save(self, filename=None):
+        if filename == None:
+            filename = self.edit.edit_text
         Info.write_to_file(self.info, filename)
         urwid.emit_signal(self, 'saved')
 
@@ -348,6 +349,8 @@ ctrl+n to add new bird   ctrl+l to delete selected bird''')
         #Then loader emits the 'loaded' signal
 
     def process_record(self):
+        self.saver.set_info(self.read_info())
+        self.saver.save('_tmp') # Save config to a temp file that we will run
         self.widget.body = self.overlay(self.runner, 'runbg', 100)
 
 
@@ -370,5 +373,5 @@ loop.run()
 if record_at_exit:
     subprocess.call('killall jackd', shell=True)
     subprocess.call('clear')
-    os.execv(RECORD_SCRIPT, ('gui_recording', ))        
+    os.execv(RECORD_SCRIPT, ('gui_recording', '_tmp'))        
 

@@ -2,11 +2,32 @@
 
 # move to source directory
 cd "$(dirname "$0")" || exit
+cur_dir=$(pwd)
 ## load parameters
-source ./parameters
+
+prefix="$1" #which set of parameters we are loading
+
+if [ "$prefix" == "" ]; then
+    params="$cur_dir/parameters"
+    birds="$cur_dir/birds"
+else
+    params="$cur_dir/${prefix}_parameters"
+    birds="$cur_dir/${prefix}_birds"
+fi
+
+source $params
 
 global_attributes="-a room=$room -a species=$species -a lightson=$lightson -a lightsoff=$lightsoff -a jackserver=$servername"
 jdetect_params="--close-period $closeperiod --close-rate $closerate --close-thresh $closethresh --open-thresh $openthresh --open-rate $openrate"
+
+if [ "$prefix" == "" ]; then
+    bird_file="$birds"
+fi
+
+
+echo $params
+echo $birds
+bird_file="$birds"
 
 ######## move to recordings folder ########
 mkdir -p "$recordings"
