@@ -20,6 +20,10 @@ If you get an error running jack, maybe you need to change the hw:x parameter, f
 
 BIRD_VALS = ('name', 'box', 'experimenter', 'channel')
 
+RECORD_SCRIPT = './script.sh'
+
+record_at_exit = False
+
 class Info():
     def __init__(self, params, birds):
         self.params = params
@@ -262,10 +266,10 @@ Press ENTER to start or ctrl+k to cancel.'''
             return super(Runner, self).keypress(size, key)
 
     def start_recording(self, *args):
-        subprocess.call('killall jackd', shell=True)
-        subprocess.call('clear')
-        os.execv('./script.sh', ('script', ))        
-
+        global record_at_exit
+        record_at_exit = True
+        raise urwid.ExitMainLoop()
+        
 
 class Loader(urwid.WidgetWrap):
     signals = ['loaded']
@@ -294,7 +298,7 @@ class Loader(urwid.WidgetWrap):
 class GUI(urwid.WidgetWrap):
     def __init__(self):
         self.infobox = urwid.Text('''Hello scientist!
-ctrl+w to save   ctrl+e to load   ctrl+k to cancel   ctrl+c to quit   ctrl+p to record
+ctrl+w to save   ctrl+e to load   ctrl+k to cancel   ctrl+x to quit   ctrl+p to record
 ctrl+n to add new bird   ctrl+l to delete selected bird''')
         self.info = Info.read_from_file()
         self.editor = ColumnEditor(self.info)
@@ -318,14 +322,16 @@ ctrl+n to add new bird   ctrl+l to delete selected bird''')
 
 
     def keypress(self, size, key):
-        if key == "ctrl w":
+        if key == 'ctrl w':
             self.process_save()
-        elif key == "ctrl e":
+        elif key == 'ctrl e':
             self.process_load()
-        elif key == "ctrl k":
+        elif key == 'ctrl k':
             self.show_editor()
-        elif key == "ctrl p":
+        elif key == 'ctrl p':
             self.process_record()
+        elif key == 'ctrl x':
+            raise urwid.ExitMainLoop()
         else:
             return super(GUI, self).keypress(size, key)
 
@@ -358,5 +364,11 @@ ctrl+n to add new bird   ctrl+l to delete selected bird''')
 m = GUI()
 loop = urwid.MainLoop(m, 
     [('savebg', 'white', 'dark blue'), ('loadbg', 'white', 'dark green'),
-        ('runbg', 'white', 'dark red')
-    ]).run()
+        ('runbg', 'white', 'dark red')])
+
+loop.run()
+if record_at_exit:
+    subprocess.call('killall jackd', shell=True)
+    subprocess.call('clear')
+    os.execv(RECORD_SCRIPT, ('gui_recording', ))        
+
