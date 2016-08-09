@@ -364,14 +364,14 @@ ctrl+n to add new bird   ctrl+l to delete selected bird''')
         return overlay
 
 
-m = GUI()
-loop = urwid.MainLoop(m, 
-    [('savebg', 'white', 'dark blue'), ('loadbg', 'white', 'dark green'),
-        ('runbg', 'white', 'dark red')])
-
-loop.run()
-if record_at_exit:
-    subprocess.call('killall jackd', shell=True)
-    subprocess.call('clear')
-    os.execv(RECORD_SCRIPT, ('gui_recording', '_tmp'))        
-
+    
+if __name__ == '__main__':
+    m = GUI()
+    loop = urwid.MainLoop(m, 
+        [('savebg', 'white', 'dark blue'), ('loadbg', 'white', 'dark green'),
+            ('runbg', 'white', 'dark red')])
+    loop.run()
+    if record_at_exit:
+        subprocess.call('killall jackd', shell=True)
+        subprocess.call('clear')
+        os.execv(RECORD_SCRIPT, ('gui_recording', '_tmp'))      
