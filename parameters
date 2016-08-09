@@ -1,9 +1,8 @@
 #!/bin/bash
 ######## global variables ########
-bird_file="/home/kjbrown/panoptisong_acoustic/birds"
-recordings="/home/kjbrown/panoptisong_recordings/"
+bird_file="/home/mbadura/neuro/gui/birds"
+recordings="/home/mbadura/recordings"
 backup_location="" #example: "trex:song_library"
-experimenter="kjbrown"
 room="010b"
 species="zf"
 lightson="09"

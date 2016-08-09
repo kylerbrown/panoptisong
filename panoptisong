@@ -5,7 +5,7 @@ cd "$(dirname "$0")" || exit
 ## load parameters
 source ./parameters
 
-global_attributes="-a experimenter=$experimenter -a room=$room -a species=$species -a lightson=$lightson -a lightsoff=$lightsoff -a jackserver=$servername"
+global_attributes="-a room=$room -a species=$species -a lightson=$lightson -a lightsoff=$lightsoff -a jackserver=$servername"
 jdetect_params="--close-period $closeperiod --close-rate $closerate --close-thresh $closethresh --open-thresh $openthresh --open-rate $openrate"
 
 ######## move to recordings folder ########
@@ -29,6 +29,10 @@ function record_bird {
     shift
     local box="$1"
     shift
+    local experimenter="$1"
+    shift
+    # trig_channel must be the last field in the file, because it's used both in trig_channel
+    # and in inChannels
     local trig_channel="$1"
     local inChannels="$@"
     local channelstring=""
@@ -36,7 +40,7 @@ function record_bird {
     do
 	channelstring="$channelstring --in $channel"
     done
-    bird_attributes="-a bird=$bird -a box=$box -a trig_channel=$trig_channel"
+    bird_attributes="-a bird=$bird -a box=$box -a trig_channel=$trig_channel -a experimenter=$experimenter"
     filename="${bird}_$date"
     mkdir -p "$bird"
     echo "$bird"

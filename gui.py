@@ -18,7 +18,7 @@ If you get an error running jack, maybe you need to change the hw:x parameter, f
     })
 
 
-BIRD_VALS = ('name', 'box', 'channel')
+BIRD_VALS = ('name', 'box', 'experimenter', 'channel')
 
 class Info():
     def __init__(self, params, birds):
@@ -262,11 +262,9 @@ Press ENTER to start or ctrl+k to cancel.'''
             return super(Runner, self).keypress(size, key)
 
     def start_recording(self, *args):
+        subprocess.call('killall jackd', shell=True)
         subprocess.call('clear')
-        os.execv('./script.sh', ('script', ))
-
-
-        
+        os.execv('./script.sh', ('script', ))        
 
 
 class Loader(urwid.WidgetWrap):
