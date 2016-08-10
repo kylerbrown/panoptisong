@@ -20,15 +20,6 @@ source $params
 global_attributes="-a room=$room -a species=$species -a lightson=$lightson -a lightsoff=$lightsoff -a jackserver=$servername"
 jdetect_params="--close-period $closeperiod --close-rate $closerate --close-thresh $closethresh --open-thresh $openthresh --open-rate $openrate"
 
-if [ "$prefix" == "" ]; then
-    bird_file="$birds"
-fi
-
-
-echo $params
-echo $birds
-bird_file="$birds"
-
 ######## move to recordings folder ########
 mkdir -p "$recordings"
 cd "$recordings" || exit
@@ -52,8 +43,8 @@ function record_bird {
     shift
     local experimenter="$1"
     shift
-    # trig_channel must be the last field in the file, because it's used both in trig_channel
-    # and in inChannels
+    # if you want to add more fields for birds, add them before trig_channel
+    # because there can be multiple values to trig_channel
     local trig_channel="$1"
     local inChannels="$@"
     local channelstring=""
@@ -91,7 +82,7 @@ function panoptisong (){
 	if ! [[ "$line" =~ ^(#|$) ]]; then
 	    record_bird $line # do not quote variable!
 	fi
-    done < "$bird_file"
+    done < "$birds"
 }
 
 
