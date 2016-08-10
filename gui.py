@@ -14,7 +14,8 @@ HINTS = defaultdict(lambda: "", {
         'backup_location': 'Directory to which files can be copied at reset_time (can be remote.)',
         'servername': 'jack server name - should not matter.',
         'jackdparams': '''-r is sampling rate, -p is frames per period
-If you get an error running jack, maybe you need to change the hw:x parameter, find the right soundcard using aplay -l.'''
+If you get an error running jack, maybe you need to change the hw:x parameter, find the right soundcard using aplay -l.''',
+        'reset_time': 'Time of the day when jrecord resets, and backup is made if path is specified.',
     })
 
 
