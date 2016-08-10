@@ -28,9 +28,9 @@ birds
 ------
 Edit the file `birds` to include your birds and their microphone channels. Rows starting with # are ignored. The four positional variables are BIRD BOX EXPERIMENTER CHANNEL. The values are separated with tabs. For example, the line 
 
-    bk196 1 jack system:capture_3
+    bk196 1 bob system:capture_3
 
-means a bird name bk196 in box 1 has a microphone channel system:capture_3, and belongs to the person jack. You may specify additional channels after the first channel, which will also be recorded at the same time. The first channel is the triggered channel. For exammple, the line:
+means a bird name bk196 in box 1 has a microphone channel system:capture_3, and belongs to the person bob. You may specify additional channels after the first channel, which will also be recorded at the same time. The first channel is the triggered channel. For exammple, the line:
 
     o43 4 jack system:capture_5 system:capture_6
 
